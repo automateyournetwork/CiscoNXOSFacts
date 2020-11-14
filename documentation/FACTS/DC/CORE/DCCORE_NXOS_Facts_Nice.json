@@ -1,0 +1,40 @@
+{
+    "discovered_interpreter_python":,
+    "net__hostname":,
+    "net__os": ,
+    "net__platform": ,
+    "net_all_ipv4_addresses": [],
+    "net_all_ipv6_addresses": [],
+    "net_api": "cliconf",
+    "net_config":,
+    "net_fan_info": [],
+    "net_features_enabled": [],
+    "net_filesystems": [
+        "bootflash:"
+    ],
+    "net_gather_network_resources": [],
+    "net_gather_subset": [
+        "hardware",
+        "legacy",
+        "features",
+        "default",
+        "interfaces",
+        "config"
+    ],
+    "net_hostname": "DCCORE01",
+    "net_image": "",
+    "net_interfaces": {},
+    "net_interfaces_list": [],
+    "net_license_hostid": ,
+    "net_memfree_mb": ,
+    "net_memtotal_mb": ,
+    "net_model": ,
+    "net_module": [],
+    "net_neighbors": {},
+    "net_python_version":,
+    "net_serialnum":,
+    "net_system": "nxos",
+    "net_version": ,
+    "net_vlan_list": [],
+    "network_resources": {}
+}

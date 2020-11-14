@@ -1,0 +1,959 @@
+---
+
+- hosts: DCAccess
+  vars_prompt:
+    - name: NXOS_User_Prompt
+      prompt: "Enter Cisco NXOS Username"
+      private: no 
+    - name: NXOS_Password_Prompt
+      prompt: "Enter Cisco NXOS Password"
+      private: yes      
+  tasks:
+# Register Username and Password #
+    - set_fact:   
+        nxos_user: "{{ NXOS_User_Prompt }}"     
+        nxos_password: "{{ NXOS_Password_Prompt }}"
+      no_log: true
+      delegate_to: localhost
+      run_once: true   
+
+# Gather Ansible Facts About ACCESS #
+    - name: Gather Ansible Facts About DC ACCESS
+      nxos_facts:
+        gather_subset:
+          - all
+
+# Print facts on screen #          
+    - debug: 
+        msg: "{{ ansible_facts }}"
+
+## GLOBAL NXOS FACTS SECTION ##
+# Create JSON file with Ansible Facts #
+    - name: Create RAW JSON file
+      copy: 
+        content: | 
+          {{ ansible_facts }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_Facts_RAW.json
+
+# Create JSON file with Ansible Facts #
+    - name: Create raw JSON file
+      copy: 
+        content: | 
+          {{ ansible_facts | to_nice_json }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_Facts_Nice.json
+
+# Create YAML file with Ansible Facts #
+    - name: Create raw YAML
+      copy: 
+        content: | 
+          {{ ansible_facts | to_nice_yaml }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_Facts.yml
+
+# Add Headers to YAML #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_Facts.yml
+        insertbefore: BOF
+        line: ---        
+      delegate_to: localhost
+
+
+# Create CSV file with results #
+    - name: Create CSV
+      copy: 
+        content: | 
+          {{ inventory_hostname }},{{ ansible_facts['net_image'] }},{{ ansible_facts['net_version'] }},{{ ansible_facts['net_serialnum'] }},{{ ansible_facts['net_model'] }},{{ ansible_facts['net_memtotal_mb'] }},{{ ansible_facts['net_memfree_mb'] }},{{ ansible_facts['net_license_hostid'] }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.csv       
+      loop: "{{ ansible_facts | dict2items }}"
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.csv
+        insertbefore: BOF
+        line: Hostname,Image,Version,Serial Number,Model,Total Memory,Free Memory,License
+
+# Create Markdown file with results #
+    - name: Create Markdown
+      copy: 
+        content: | 
+          | {{ inventory_hostname }} | {{ ansible_facts['net_image'] }} | {{ ansible_facts['net_version'] }} | {{ ansible_facts['net_serialnum'] }} | {{ ansible_facts['net_model'] }} | {{ ansible_facts['net_memtotal_mb'] }} | {{ ansible_facts['net_memfree_mb'] }} | {{ ansible_facts['net_license_hostid'] }} |
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.md 
+      
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.md
+        regexp: '],'
+        replace: ']\n'
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.md
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format Markdown #
+    - name: Format Markdown File Commas to Pipes
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.md
+        regexp: ','
+        replace: ' | '
+        
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.md
+        regexp: "'"
+        replace: ''
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| -------- | ----- | ------- | ------------- | ----- | ------------ | ----------- | ------- |' }
+        - { property: '| Hostname | Image | Version | Serial Number | Model | Total Memory | Free Memory | License |' }
+        - { property: '# Cisco NXOS Facts for {{ inventory_hostname }}' }        
+
+# Create Mind Map # 
+    - name: create ACCESS Facts Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_NXOS_facts.md"
+      register: markmap
+
+## IP ADDRESS FACTS SECTION ##
+# Create CSV file with IP results #
+    - name: Create IP CSV
+      copy: 
+        content: | 
+          {{ ansible_facts['net_all_ipv4_addresses'] }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.csv       
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.csv
+        regexp: ','
+        replace: '\n'
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.csv
+        insertbefore: BOF
+        line: IP Addresses
+
+# Create Markdown file with results #
+    - name: Create Markdown
+      copy: 
+        content: | 
+          {{ ansible_facts['net_all_ipv4_addresses'] }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.md 
+      
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.md
+        regexp: ','
+        replace: '\n'
+
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.md
+        regexp: '^'
+        replace: '| '
+
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.md
+        regexp: '$'
+        replace: ' |'
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.md
+        regexp: '\[|\]|"'
+        replace: ''          
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| -------------- |' }
+        - { property: '| IPv4 Addresses |' }
+        - { property: '# IP Addresses for {{ inventory_hostname }}' }        
+
+# Create Mind Map # 
+    - name: create ACCESS IP Address Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_IP_facts.md"
+      register: markmap
+
+## FEATURE FACTS SECTION ##
+# Create CSV file with Feature results #
+    - name: Create Feature CSV
+      copy: 
+        content: | 
+          {{ ansible_facts['net_features_enabled'] }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.csv       
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.csv
+        regexp: ','
+        replace: '\n'
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.csv
+        insertbefore: BOF
+        line: Enabled Features
+
+# Create Markdown file with results #
+    - name: Create Markdown
+      copy: 
+        content: | 
+          {{ ansible_facts['net_features_enabled'] }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.md 
+      
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.md
+        regexp: ','
+        replace: '\n'
+
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.md
+        regexp: '^'
+        replace: '| '
+
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.md
+        regexp: '$'
+        replace: ' |'
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.md
+        regexp: '\[|\]|"'
+        replace: ''          
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| -------- |' }
+        - { property: '| Features |' }
+        - { property: '# Features for {{ inventory_hostname }}' }        
+
+# Create Mind Map # 
+    - name: create ACCESS Feature Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Feature_facts.md"
+      register: markmap
+
+## VLAN FACTS SECTION ##
+# Create CSV file with VLAN results #
+    - name: Create VLAN CSV
+      copy: 
+        content: | 
+          {{ ansible_facts['net_vlan_list'] }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.csv       
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.csv
+        regexp: ','
+        replace: '\n'
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.csv
+        insertbefore: BOF
+        line: VLANs
+
+# Create Markdown file with results #
+    - name: Create Markdown
+      copy: 
+        content: | 
+          {{ ansible_facts['net_vlan_list'] }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.md 
+      
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.md
+        regexp: ','
+        replace: '\n'
+
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.md
+        regexp: '^'
+        replace: '| '
+
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.md
+        regexp: '$'
+        replace: ' |'
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.md
+        regexp: '\[|\]|"'
+        replace: ''          
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| ----- |' }
+        - { property: '| VLANs |' }
+        - { property: '# VLANs for {{ inventory_hostname }}' }        
+
+# Create Mind Map # 
+    - name: create ACCESS VLAN Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_VLAN_facts.md"
+      register: markmap
+
+## Interface Facts Section ##
+# Remove file #
+    - name: Remove file (delete file)
+      file:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        state: absent
+
+# Create Interface CSV file with results #
+    - name: Data Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        line: "{{ item.key }},{% if item.value.description is defined %}{{ item.value.description }} {% else %}No Description {% endif %},{{ item.value.state }},{% if item.value.ipv4 is defined %} {{ item.value.ipv4 }} {% else %} NA,NA {% endif %},{{ item.value.bandwidth }},{{ item.value.macaddress }},{{ item.value.type }},{{ item.value.mtu }}"
+        create: yes
+      loop: "{{ ansible_facts.net_interfaces | dict2items }}" 
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        regexp: "{"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        regexp: "address: "
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        regexp: "masklen: "
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        regexp: "}"
+        replace: ''
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.csv
+        insertbefore: BOF
+        line: Interface,Description,State,Subnet Mask,IP Address,Bandwidth,MAC Address,Type,MTU
+
+# Remove file #
+    - name: Remove file (delete file)
+      file:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        state: absent
+
+# Create Interface Markdown file with results #
+    - name: Data Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        line: "| {{ item.key }} | {% if item.value.description is defined %}{{ item.value.description }} {% else %}No Description {% endif %} | {{ item.value.state }} | {% if item.value.ipv4 is defined %} {{ item.value.ipv4 }} {% else %} NA | NA {% endif %} | {{ item.value.bandwidth }} | {{ item.value.macaddress }} | {{ item.value.type }} | {{ item.value.mtu }} |"
+        create: yes
+      loop: "{{ ansible_facts.net_interfaces | dict2items }}" 
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: '\[|\]|"'
+        replace: ''      
+      
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: '],'
+        replace: ']\n'
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format Markdown #
+    - name: Format Markdown File Commas to Pipes
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: ','
+        replace: ' | '
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: "'"
+        replace: ''
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: "{"
+        replace: ''
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: "address: "
+        replace: ''
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: "masklen: "
+        replace: ''
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        regexp: "}"
+        replace: ''
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| --------- | ----------- | ----- | ----------- | ---------- | --------- | ----------- | ---- | --- |' }
+        - { property: '| Interface | Description | State | Subnet Mask | IP Address | Bandwidth | MAC Address | Type | MTU |' }
+        - { property: '# Cisco Interface Facts for {{ inventory_hostname }}' }
+
+# Create Mind Map # 
+    - name: create ACCESS Interface Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Interface_facts.md"
+      register: markmap
+
+# Neighbor section
+# Remove file #
+    - name: Remove file (delete file)
+      file:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        state: absent
+
+# Create Neighbor CSV file with results #
+    - name: Data Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        line: "{{ item.key }},{{ item.value }}"
+        create: yes
+      loop: "{{ ansible_facts.net_neighbors | dict2items }}" 
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        regexp: "{"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        regexp: "host:"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        regexp: "port:"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        regexp: "sysname:"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        regexp: "}"
+        replace: ''
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.csv
+        insertbefore: BOF
+        line: Interface,Neighbor,Port,Neighbor System Name
+
+# Remove file #
+    - name: Remove file (delete file)
+      file:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        state: absent
+
+# Create Interface Markdown file with results #
+    - name: Data Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        line: "| {{ item.key }} | {{ item.value }} |"
+        create: yes
+      loop: "{{ ansible_facts.net_neighbors | dict2items }}" 
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: '\[|\]|"'
+        replace: ''      
+      
+# Format Markdown #
+    - name: Format Markdown File New Lines
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: '],'
+        replace: ']\n'
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format Markdown #
+    - name: Format Markdown File Commas to Pipes
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: ','
+        replace: ' | '
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: "'"
+        replace: ''
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: "{"
+        replace: ''
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: "host:"
+        replace: ''
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: "port:"
+        replace: ''
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: "sysname:"
+        replace: ''
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        regexp: "}"
+        replace: ''
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| --------- | -------- | ---- | -------------------- |' }
+        - { property: '| Interface | Neighbor | Port | Neighbor System Name |' }
+        - { property: '# Cisco Neighbor Facts for {{ inventory_hostname }}' }
+
+# Create Mind Map # 
+    - name: create ACCESS IP Address Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Neighbor_facts.md"
+      register: markmap
+
+## MODULE FACTS SECTION ##
+# Create CSV file with Module results #
+    - name: Create Module CSV
+      copy: 
+# Add a new line below for each module replacing the [number] with the modules starting at 0 #
+        content: |       
+          {{ ansible_facts | json_query('net_module[0].model') }},{{ ansible_facts | json_query('net_module[0].ports') }},{{ ansible_facts | json_query('net_module[0].status') }},{{ ansible_facts | json_query('net_module[0].type') }}
+          {{ ansible_facts | json_query('net_module[1].model') }},{{ ansible_facts | json_query('net_module[1].ports') }},{{ ansible_facts | json_query('net_module[1].status') }},{{ ansible_facts | json_query('net_module[1].type') }}
+          {{ ansible_facts | json_query('net_module[2].model') }},{{ ansible_facts | json_query('net_module[2].ports') }},{{ ansible_facts | json_query('net_module[2].status') }},{{ ansible_facts | json_query('net_module[2].type') }}
+          {{ ansible_facts | json_query('net_module[3].model') }},{{ ansible_facts | json_query('net_module[3].ports') }},{{ ansible_facts | json_query('net_module[3].status') }},{{ ansible_facts | json_query('net_module[3].type') }}
+          {{ ansible_facts | json_query('net_module[4].model') }},{{ ansible_facts | json_query('net_module[4].ports') }},{{ ansible_facts | json_query('net_module[4].status') }},{{ ansible_facts | json_query('net_module[3].type') }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Module_facts.csv       
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Module_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Module_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Module_facts.csv
+        insertbefore: BOF
+        line: Model,Ports,Status,Type
+
+# Create Markdown file with results #
+    - name: Create Markdown
+      copy: 
+        content: | 
+          | {{ ansible_facts | json_query('net_module[0].model') }} | {{ ansible_facts | json_query('net_module[0].ports') }} | {{ ansible_facts | json_query('net_module[0].status') }} | {{ ansible_facts | json_query('net_module[0].type') }} |
+          | {{ ansible_facts | json_query('net_module[1].model') }} | {{ ansible_facts | json_query('net_module[1].ports') }} | {{ ansible_facts | json_query('net_module[1].status') }} | {{ ansible_facts | json_query('net_module[1].type') }} |
+          | {{ ansible_facts | json_query('net_module[2].model') }} | {{ ansible_facts | json_query('net_module[2].ports') }} | {{ ansible_facts | json_query('net_module[2].status') }} | {{ ansible_facts | json_query('net_module[2].type') }} |
+          | {{ ansible_facts | json_query('net_module[3].model') }} | {{ ansible_facts | json_query('net_module[3].ports') }} | {{ ansible_facts | json_query('net_module[3].status') }} | {{ ansible_facts | json_query('net_module[3].type') }} |
+          | {{ ansible_facts | json_query('net_module[4].model') }} | {{ ansible_facts | json_query('net_module[4].ports') }} | {{ ansible_facts | json_query('net_module[4].status') }} | {{ ansible_facts | json_query('net_module[4].type') }} |
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Module_facts.md 
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Module_facts.md
+        regexp: '\[|\]|"'
+        replace: ''          
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Module_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| ----- | ----- | ------ | ---- |' }
+        - { property: '| Model | Ports | Status | Type |' }
+        - { property: '# Modules for {{ inventory_hostname }}' }        
+
+# Create Mind Map # 
+    - name: create ACCESS Module Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Module_facts.md"
+      register: markmap
+
+## FAN FACTS SECTION ##
+# Create CSV file with FAN results #
+    - name: Create FAN CSV
+      copy: 
+# Add a new line below for each FAN replacing the [number] with the FAN starting at 0 #
+        content: |       
+          {{ ansible_facts | json_query('net_fan_info[0].model') }},{{ ansible_facts | json_query('net_fan_info[0].name') }},{{ ansible_facts | json_query('net_fan_info[0].status') }},{{ ansible_facts | json_query('net_fan_info[0].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[1].model') }},{{ ansible_facts | json_query('net_fan_info[1].name') }},{{ ansible_facts | json_query('net_fan_info[1].status') }},{{ ansible_facts | json_query('net_fan_info[1].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[2].model') }},{{ ansible_facts | json_query('net_fan_info[2].name') }},{{ ansible_facts | json_query('net_fan_info[2].status') }},{{ ansible_facts | json_query('net_fan_info[2].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[3].model') }},{{ ansible_facts | json_query('net_fan_info[3].name') }},{{ ansible_facts | json_query('net_fan_info[3].status') }},{{ ansible_facts | json_query('net_fan_info[3].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[4].model') }},{{ ansible_facts | json_query('net_fan_info[4].name') }},{{ ansible_facts | json_query('net_fan_info[4].status') }},{{ ansible_facts | json_query('net_fan_info[4].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[5].model') }},{{ ansible_facts | json_query('net_fan_info[5].name') }},{{ ansible_facts | json_query('net_fan_info[5].status') }},{{ ansible_facts | json_query('net_fan_info[5].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[6].model') }},{{ ansible_facts | json_query('net_fan_info[6].name') }},{{ ansible_facts | json_query('net_fan_info[6].status') }},{{ ansible_facts | json_query('net_fan_info[6].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[7].model') }},{{ ansible_facts | json_query('net_fan_info[7].name') }},{{ ansible_facts | json_query('net_fan_info[7].status') }},{{ ansible_facts | json_query('net_fan_info[7].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[8].model') }},{{ ansible_facts | json_query('net_fan_info[8].name') }},{{ ansible_facts | json_query('net_fan_info[8].status') }},{{ ansible_facts | json_query('net_fan_info[8].hw_ver') }}
+          {{ ansible_facts | json_query('net_fan_info[9].model') }},{{ ansible_facts | json_query('net_fan_info[9].name') }},{{ ansible_facts | json_query('net_fan_info[9].status') }},{{ ansible_facts | json_query('net_fan_info[9].hw_ver') }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.csv       
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.csv
+        insertbefore: BOF
+        line: Model,Name,Status,Hardware Version
+
+# Create Markdown file with results #
+    - name: Create Markdown
+      copy: 
+        content: | 
+          | {{ ansible_facts | json_query('net_fan_info[0].model') }},{{ ansible_facts | json_query('net_fan_info[0].name') }},{{ ansible_facts | json_query('net_fan_info[0].status') }},{{ ansible_facts | json_query('net_fan_info[0].hw_ver') }} |
+          | {{ ansible_facts | json_query('net_fan_info[1].model') }},{{ ansible_facts | json_query('net_fan_info[1].name') }},{{ ansible_facts | json_query('net_fan_info[1].status') }},{{ ansible_facts | json_query('net_fan_info[1].hw_ver') }} |
+          | {{ ansible_facts | json_query('net_fan_info[2].model') }},{{ ansible_facts | json_query('net_fan_info[2].name') }},{{ ansible_facts | json_query('net_fan_info[2].status') }},{{ ansible_facts | json_query('net_fan_info[2].hw_ver') }} |
+          | {{ ansible_facts | json_query('net_fan_info[3].model') }},{{ ansible_facts | json_query('net_fan_info[3].name') }},{{ ansible_facts | json_query('net_fan_info[3].status') }},{{ ansible_facts | json_query('net_fan_info[3].hw_ver') }} |
+          | {{ ansible_facts | json_query('net_fan_info[4].model') }},{{ ansible_facts | json_query('net_fan_info[4].name') }},{{ ansible_facts | json_query('net_fan_info[4].status') }},{{ ansible_facts | json_query('net_fan_info[4].hw_ver') }} |
+          | {{ ansible_facts | json_query('net_fan_info[5].model') }},{{ ansible_facts | json_query('net_fan_info[5].name') }},{{ ansible_facts | json_query('net_fan_info[5].status') }},{{ ansible_facts | json_query('net_fan_info[5].hw_ver') }} |
+          | {{ ansible_facts | json_query('net_fan_info[6].model') }},{{ ansible_facts | json_query('net_fan_info[6].name') }},{{ ansible_facts | json_query('net_fan_info[6].status') }},{{ ansible_facts | json_query('net_fan_info[6].hw_ver') }} |        
+          | {{ ansible_facts | json_query('net_fan_info[7].model') }},{{ ansible_facts | json_query('net_fan_info[7].name') }},{{ ansible_facts | json_query('net_fan_info[7].status') }},{{ ansible_facts | json_query('net_fan_info[7].hw_ver') }} |
+          | {{ ansible_facts | json_query('net_fan_info[8].model') }},{{ ansible_facts | json_query('net_fan_info[8].name') }},{{ ansible_facts | json_query('net_fan_info[8].status') }},{{ ansible_facts | json_query('net_fan_info[8].hw_ver') }} |
+          | {{ ansible_facts | json_query('net_fan_info[9].model') }},{{ ansible_facts | json_query('net_fan_info[9].name') }},{{ ansible_facts | json_query('net_fan_info[9].status') }},{{ ansible_facts | json_query('net_fan_info[9].hw_ver') }} |        
+
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.md 
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.md
+        regexp: '\[|\]|"'
+        replace: ''          
+
+# Format Markdown #
+    - name: Format Markdown File Commas to Pipes
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.md
+        regexp: ','
+        replace: ' | '
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| ----- | ---- | ------ | ---------------- |' }
+        - { property: '| Model | Name | Status | Hardware Version |' }
+        - { property: '# Fans for {{ inventory_hostname }}' }        
+
+# Create Mind Map # 
+    - name: create ACCESS Fan Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_Fan_facts.md"
+      register: markmap
+
+## Power Supply FACTS SECTION ##
+# Create CSV file with Power Supplies results #
+    - name: Create Power supplies CSV
+      copy: 
+# Add a new line below for each FAN replacing the [number] with the FAN starting at 0 #
+        content: |       
+          {{ ansible_facts | json_query('net_power_supply_info[0].model') }},{{ ansible_facts | json_query('net_power_supply_info[0].number') }},{{ ansible_facts | json_query('net_power_supply_info[0].status') }},{{ ansible_facts | json_query('net_power_supply_info[0].actual_output') }}
+          {{ ansible_facts | json_query('net_power_supply_info[1].model') }},{{ ansible_facts | json_query('net_power_supply_info[1].number') }},{{ ansible_facts | json_query('net_power_supply_info[1].status') }},{{ ansible_facts | json_query('net_power_supply_info[1].actual_output') }}
+          {{ ansible_facts | json_query('net_power_supply_info[2].model') }},{{ ansible_facts | json_query('net_power_supply_info[2].number') }},{{ ansible_facts | json_query('net_power_supply_info[2].status') }},{{ ansible_facts | json_query('net_power_supply_info[2].actual_output') }}
+          {{ ansible_facts | json_query('net_power_supply_info[3].model') }},{{ ansible_facts | json_query('net_power_supply_info[3].number') }},{{ ansible_facts | json_query('net_power_supply_info[3].status') }},{{ ansible_facts | json_query('net_power_supply_info[3].actual_output') }}
+          {{ ansible_facts | json_query('net_power_supply_info[4].model') }},{{ ansible_facts | json_query('net_power_supply_info[4].number') }},{{ ansible_facts | json_query('net_power_supply_info[4].status') }},{{ ansible_facts | json_query('net_power_supply_info[4].actual_output') }}
+          {{ ansible_facts | json_query('net_power_supply_info[5].model') }},{{ ansible_facts | json_query('net_power_supply_info[5].number') }},{{ ansible_facts | json_query('net_power_supply_info[5].status') }},{{ ansible_facts | json_query('net_power_supply_info[5].actual_output') }}
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.csv       
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.csv
+        regexp: '\[|\]|"'
+        replace: ''      
+
+# Format CSV #
+    - name: Format CSV File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.csv
+        regexp: "'"
+        replace: ''
+
+# Add Header Row to CSV #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.csv
+        insertbefore: BOF
+        line: Model,Number,Status,Output
+
+# Create Markdown file with results #
+    - name: Create Markdown
+      copy: 
+        content: | 
+          | {{ ansible_facts | json_query('net_power_supply_info[0].model') }},{{ ansible_facts | json_query('net_power_supply_info[0].number') }},{{ ansible_facts | json_query('net_power_supply_info[0].status') }},{{ ansible_facts | json_query('net_power_supply_info[0].actual_output') }} |
+          | {{ ansible_facts | json_query('net_power_supply_info[1].model') }},{{ ansible_facts | json_query('net_power_supply_info[1].number') }},{{ ansible_facts | json_query('net_power_supply_info[1].status') }},{{ ansible_facts | json_query('net_power_supply_info[1].actual_output') }} |
+          | {{ ansible_facts | json_query('net_power_supply_info[2].model') }},{{ ansible_facts | json_query('net_power_supply_info[2].number') }},{{ ansible_facts | json_query('net_power_supply_info[2].status') }},{{ ansible_facts | json_query('net_power_supply_info[2].actual_output') }} |
+          | {{ ansible_facts | json_query('net_power_supply_info[3].model') }},{{ ansible_facts | json_query('net_power_supply_info[3].number') }},{{ ansible_facts | json_query('net_power_supply_info[3].status') }},{{ ansible_facts | json_query('net_power_supply_info[3].actual_output') }} |
+          | {{ ansible_facts | json_query('net_power_supply_info[4].model') }},{{ ansible_facts | json_query('net_power_supply_info[4].number') }},{{ ansible_facts | json_query('net_power_supply_info[4].status') }},{{ ansible_facts | json_query('net_power_supply_info[4].actual_output') }} |
+          | {{ ansible_facts | json_query('net_power_supply_info[5].model') }},{{ ansible_facts | json_query('net_power_supply_info[5].number') }},{{ ansible_facts | json_query('net_power_supply_info[5].status') }},{{ ansible_facts | json_query('net_power_supply_info[5].actual_output') }} |
+        dest: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.md 
+
+# Format Markdown #
+    - name: Format Markdown File Clean Up
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.md
+        regexp: '\[|\]|"'
+        replace: ''          
+
+# Format Markdown #
+    - name: Format Markdown File Commas to Pipes
+      replace:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.md
+        regexp: ','
+        replace: ' | '
+
+# Add Header Rows to Markdown #
+    - name: Header Row
+      lineinfile:
+        path: ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.md
+        insertbefore: BOF
+        line: "{{ item.property }}"
+      with_items:
+        - { property: '| ----- | ---- | ------ | ------ |' }
+        - { property: '| Model | Name | Status | Output |' }
+        - { property: '# Power Supplies for {{ inventory_hostname }}' }        
+
+# Create Mind Map # 
+    - name: create ACCESS Power Supply Mind Map 
+      shell: "npx markmap-cli ../documentation/FACTS/DC/ACCESS/{{ inventory_hostname }}_PowerSupply_facts.md"
+      register: markmap
